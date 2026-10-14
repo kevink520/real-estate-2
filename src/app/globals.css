@@ -1,26 +1,198 @@
 @import "tailwindcss";
+@import "lenis/dist/lenis.css";
+
+/* Tokens measured from the reference (1440px desktop). */
+@theme {
+  --color-bronze: #a0725b;
+  --color-ink: #000;
+  --color-paper: #fff;
+  --color-muted: #666;
+  --font-sans: var(--font-outfit), Helvetica, Arial, sans-serif;
+  --ease-lux: cubic-bezier(0.7, 0, 0.3, 1);
+  --ease-lux-inout: cubic-bezier(0.55, 0, 0.1, 1);
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --gutter: 16px;
+  --col: 33.3333vw;
+  --logo-w: 45.8333vw;
 }
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (min-width: 768px) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --gutter: 30px;
   }
 }
 
+/* Section themes (reference: .ui-dark / .ui-light). */
+[data-theme="dark"] {
+  --t-bg: #000;
+  --t-fg: #fff;
+  --t-line: rgba(255, 255, 255, 0.2);
+  --t-dim: rgba(255, 255, 255, 0.5);
+}
+[data-theme="light"] {
+  --t-bg: #fff;
+  --t-fg: #000;
+  --t-line: rgba(0, 0, 0, 0.1);
+  --t-dim: rgba(0, 0, 0, 0.4);
+}
+
+html {
+  background: #000;
+}
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #000;
+  color: #fff;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 18px;
+  text-transform: uppercase;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+::selection {
+  background: var(--color-bronze);
+  color: #fff;
+}
+
+/* Type scale */
+@utility t-tiny {
+  font-size: 10px;
+  line-height: 12px;
+  letter-spacing: 0.03em;
+}
+@utility t-label {
+  font-size: 12px;
+  line-height: 15px;
+  letter-spacing: 0.03em;
+}
+@utility t-body {
+  font-size: 14px;
+  line-height: 18px;
+}
+@utility t-lead {
+  font-size: 16px;
+  line-height: 20px;
+  @media (min-width: 768px) {
+    font-size: 20px;
+    line-height: 24px;
+  }
+}
+@utility t-h2 {
+  font-size: 24px;
+  line-height: 26px;
+  font-weight: 500;
+  @media (min-width: 768px) {
+    font-size: 36px;
+    line-height: 38px;
+  }
+}
+@utility t-stat {
+  font-size: 32px;
+  line-height: 1;
+  @media (min-width: 768px) {
+    font-size: 48px;
+  }
+}
+
+/* Page-gutter spacing (16px mobile, 30px desktop). */
+@utility px-g {
+  padding-inline: var(--gutter);
+}
+@utility pt-g {
+  padding-top: var(--gutter);
+}
+@utility pb-g {
+  padding-bottom: var(--gutter);
+}
+@utility pr-g {
+  padding-right: var(--gutter);
+}
+@utility mx-g {
+  margin-inline: var(--gutter);
+}
+@utility mt-g {
+  margin-top: var(--gutter);
+}
+@utility gap-g {
+  gap: var(--gutter);
+}
+@utility top-g {
+  top: var(--gutter);
+}
+@utility right-g {
+  right: var(--gutter);
+}
+@utility bottom-g {
+  bottom: var(--gutter);
+}
+@utility left-g {
+  left: var(--gutter);
+}
+@utility inset-x-g {
+  left: var(--gutter);
+  right: var(--gutter);
+}
+
+/* Theme-aware helpers */
+@utility bg-theme {
+  background-color: var(--t-bg);
+}
+@utility text-theme {
+  color: var(--t-fg);
+}
+@utility text-dim {
+  color: var(--t-dim);
+}
+@utility border-theme {
+  border-color: var(--t-line);
+}
+
+/* Header logo: --mix blends the hero bronze into the current theme colour. */
+.header-logo {
+  --mix: 0;
+  color: color-mix(in srgb, var(--color-bronze) calc(var(--mix) * 100%), var(--header-fg));
+  transform-origin: 0 0;
+  will-change: transform;
+}
+/* With the menu open the logo always sits collapsed in white, as on the reference. */
+.header-logo.is-collapsed {
+  transform: none !important;
+  color: var(--header-fg);
+  transition: transform 0.8s var(--ease-lux), color 0.8s var(--ease-lux);
+}
+
+/* Hide native cursor where the custom cursor takes over. */
+@media (hover: hover) and (pointer: fine) {
+  [data-cursor] {
+    cursor: none;
+  }
+}
+
+/* Hide horizontal scrollbars on draggable rows. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
