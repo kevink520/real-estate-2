@@ -84,7 +84,7 @@ export function Intro() {
               <span className="relative block size-2 overflow-hidden rounded-full border border-current">
                 <span className="absolute inset-0 bg-current transition-transform duration-[2.4s] ease-in-out" style={{ transform: `translateX(${index ? -100 : 0}%)` }} />
               </span>
-              <span className="relative block h-[1.45em] w-[11ch] overflow-hidden">
+              <span className="relative block h-[1.45em] w-[13ch] overflow-hidden">
                 {hero.states.map((s, i) => (
                   <span
                     key={s}
