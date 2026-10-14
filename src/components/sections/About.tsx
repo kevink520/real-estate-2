@@ -1,47 +1,47 @@
-import { about } from "@/content/site";
-import { Lines, Reveal } from "@/components/motion/Reveal";
-import { Parallax } from "@/components/motion/Parallax";
-import { Appear } from "@/components/motion/Appear";
-import { Img } from "@/components/ui/Img";
+import { manifesto } from "@/content/site";
+import { Odometer } from "@/components/motion/Odometer";
+import { Rule } from "@/components/motion/Rule";
+import { ScrubWords } from "@/components/motion/ScrubWords";
+import { Label } from "@/components/ui/Label";
 import { Section } from "@/components/ui/Section";
 
+/** Manifesto: a statement that brightens word by word, then the house in numbers. */
 export function About() {
   return (
-    <Section id="about" theme="dark" className="h-svh min-h-[560px] overflow-hidden">
-      <Parallax className="absolute inset-0" travel={20}>
-        <Img src={about.image} />
-      </Parallax>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30" />
+    <Section id="manifesto" theme="noir" chapter="02" className="px-g py-sec">
+      <Rule />
+      <div className="grid-12 mt-6 gap-y-10">
+        <Label n="02" className="col-span-12 md:col-span-3">
+          {manifesto.label}
+        </Label>
+        <ScrubWords parts={manifesto.parts} className="t-statement col-span-12 md:col-span-9" />
+      </div>
 
-      <Reveal as="h2" type="chars" className="t-h2 absolute top-[52%] left-g md:top-[62%]">
-        <Lines lines={about.title} />
-      </Reveal>
+      <div className="grid-12 mt-[18vh] gap-y-12">
+        <p className="t-mono col-span-12 text-dim md:col-span-3">The house in numbers</p>
+        <dl className="col-span-12 grid grid-cols-2 gap-x-g gap-y-12 md:col-span-9 md:grid-cols-4">
+          {manifesto.stats.map((s) => (
+            <div key={s.label} className="flex flex-col border-t border-line pt-5">
+              <dt className="t-mono order-2 mt-4 text-dim">{s.label}</dt>
+              <dd className="font-display serif-em text-[clamp(64px,8vw,148px)] leading-none tracking-[-0.05em]">
+                <Odometer value={s.value} />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
 
-      <Appear className="absolute right-g bottom-[84px] flex gap-0 md:bottom-g">
-        <button
-          type="button"
-          className="t-tiny group flex h-[160px] w-[150px] flex-col justify-between bg-black p-2.5 text-left text-white md:h-[260px] md:w-[210px]"
-        >
-          <span>{about.video}</span>
-          <span className="grid size-10 place-items-center self-center rounded-full border border-white/30 transition-colors duration-400 ease-lux group-hover:bg-white group-hover:text-black">
-            <svg viewBox="0 0 8 10" className="ml-0.5 size-2.5" aria-hidden>
-              <path d="M0 0l8 5-8 5z" fill="currentColor" />
-            </svg>
-          </span>
-          <span />
-        </button>
-        <a href="#apartments" className="t-tiny group flex h-[160px] w-[150px] flex-col justify-between bg-white p-2.5 text-black md:h-[260px] md:w-[210px]">
-          <span>
-            <Lines lines={about.offer.label} />
-          </span>
-          <span className="t-body self-center text-center">
-            <Lines lines={about.offer.title} />
-          </span>
-          <span className="self-center text-bronze underline underline-offset-4 transition-opacity duration-400 group-hover:opacity-60">
-            {about.offer.link}
-          </span>
-        </a>
-      </Appear>
+      <a
+        href="#residences"
+        className="group mt-[14vh] flex flex-col gap-4 border-y border-line py-8 transition-colors duration-700 hover:bg-fg/[0.04] md:flex-row md:items-center md:justify-between md:px-6"
+      >
+        <span className="t-mono text-copper">{manifesto.offer.label}</span>
+        <span className="t-h3">{manifesto.offer.text}</span>
+        <span className="t-mono flex items-center gap-3">
+          {manifesto.offer.link}
+          <span className="inline-block transition-transform duration-700 ease-expo group-hover:translate-x-2">→</span>
+        </span>
+      </a>
     </Section>
   );
 }

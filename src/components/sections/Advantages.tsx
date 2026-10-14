@@ -1,19 +1,21 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { advantages } from "@/content/site";
+import { amenities } from "@/content/site";
 import { cn } from "@/lib/cn";
 import { gsap, useGSAP } from "@/lib/gsap";
-import { Lines } from "@/components/motion/Reveal";
+import { Odometer } from "@/components/motion/Odometer";
 import { Img } from "@/components/ui/Img";
+import { Label } from "@/components/ui/Label";
 import { Section } from "@/components/ui/Section";
 
-const N = advantages.items.length;
+const N = amenities.items.length;
+const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
- * Pinned stack (reference `advantages` / `advantagesImage` patterns): each step of
- * 100vh reveals the next image with clip-path polygon from the bottom plus a 5svh
- * rise, while the left panel swaps the title, copy and "n — 5" counter.
+ * Pinned deck. Each step raises the next card from below through a clip reveal
+ * while the card beneath recedes (scale, dim); the giant italic numeral rolls
+ * like an odometer and the title and copy swap.
  */
 export function Advantages() {
   const root = useRef<HTMLDivElement>(null);
@@ -23,60 +25,70 @@ export function Advantages() {
     () => {
       const mm = gsap.matchMedia();
       mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
-        const images = gsap.utils.toArray<HTMLElement>("[data-adv-image]");
-        const texts = gsap.utils.toArray<HTMLElement>("[data-adv-text]");
-        gsap.set(images.slice(1), { clipPath: "inset(100% 0% 0% 0%)", y: "5svh" });
-        gsap.set(texts.slice(1), { autoAlpha: 0, y: 30 });
+        const cards = gsap.utils.toArray<HTMLElement>("[data-card]");
+        gsap.set(cards, { filter: "brightness(1)" });
+        gsap.set(cards.slice(1), { clipPath: "inset(100% 0% 0% 0%)", yPercent: 12 });
         const tl = gsap.timeline({
           defaults: { ease: "none" },
           scrollTrigger: {
             trigger: root.current,
             start: "top top",
             end: "bottom bottom",
-            scrub: true,
+            scrub: 0.6,
             onUpdate: (self) => setActive(Math.min(N - 1, Math.round(self.progress * (N - 1)))),
           },
         });
         for (let i = 1; i < N; i++) {
-          const at = i - 1 + 0.15;
-          tl.to(images[i], { clipPath: "inset(0% 0% 0% 0%)", y: 0, duration: 0.7 }, at)
-            .to(images[i - 1], { y: "-5svh", duration: 0.7 }, at)
-            .to(texts[i - 1], { autoAlpha: 0, y: -30, duration: 0.3 }, at + 0.1)
-            .to(texts[i], { autoAlpha: 1, y: 0, duration: 0.35 }, at + 0.4);
+          const t = i - 1 + 0.15;
+          tl.to(cards[i], { clipPath: "inset(0% 0% 0% 0%)", yPercent: 0, duration: 0.75 }, t)
+            .to(cards[i].querySelector("[data-inner]"), { scale: 1, duration: 0.75 }, t)
+            .to(cards[i - 1], { scale: 0.9, yPercent: -4, filter: "brightness(0.6)", duration: 0.75 }, t);
+          if (i > 1) tl.to(cards[i - 2], { autoAlpha: 0, duration: 0.4 }, t + 0.3);
         }
-        tl.to({}, { duration: 0.15 });
+        tl.to({}, { duration: 0.2 });
       });
       return () => mm.revert();
     },
     { scope: root },
   );
 
-  return (
-    <Section id="advantages" theme="dark" themeLeft="dark">
-      <h2 className="sr-only">{advantages.label}</h2>
+  const item = amenities.items[active];
 
-      {/* Desktop: pinned stack */}
-      <div ref={root} className="relative hidden md:block" style={{ height: `${N * 100}svh` }}>
-        <div className="sticky top-0 flex h-svh overflow-hidden">
-          <div className="relative w-[var(--col)] shrink-0 bg-black">
-            <p className="t-tiny absolute top-[150px] left-g flex items-center gap-2">
-              <span className="inline-block w-3 text-center">{active + 1}</span>
-              <span className="h-px w-3 bg-white/40" />
-              <span className="text-white/40">{N}</span>
+  return (
+    <Section id="amenities" theme="noir" chapter="06">
+      {/* Desktop: pinned deck (stacked cards instead under reduced motion) */}
+      <div ref={root} className="relative hidden md:motion-safe:block" style={{ height: `${N * 90}svh` }}>
+        <div className="sticky top-0 grid-12 h-svh px-g pt-28 pb-g">
+          <div className="col-span-4 flex flex-col justify-between">
+            <Label n="06">{amenities.label}</Label>
+            <p className="font-display serif-em text-copper text-[clamp(120px,17vw,320px)] leading-[0.8] tracking-[-0.06em]" aria-label={`${active + 1} of ${N}`}>
+              <Odometer value={pad(active + 1)} stagger={0.05} />
             </p>
-            {advantages.items.map((item, i) => (
-              <div key={i} data-adv-text className="absolute inset-0">
-                <h3 className="t-lead absolute top-[45%] left-g">
-                  <Lines lines={item.title} />
-                </h3>
-                <p className="t-tiny absolute right-g bottom-g left-[22%]">{item.text}</p>
-              </div>
-            ))}
+            <div className="grid">
+              {amenities.items.map((it, i) => (
+                <div
+                  key={it.title}
+                  className={cn(
+                    "col-start-1 row-start-1 transition-[opacity,transform] duration-1000 ease-expo",
+                    i === active ? "opacity-100" : "pointer-events-none translate-y-6 opacity-0",
+                  )}
+                  aria-hidden={i !== active}
+                >
+                  <h3 className="t-h2">{it.title}</h3>
+                  <p className="t-body mt-5 max-w-[380px] text-dim">{it.text}</p>
+                </div>
+              ))}
+            </div>
+            <p className="t-mono text-dim">
+              {pad(active + 1)} / {pad(N)} — {item.title}
+            </p>
           </div>
-          <div className="relative flex-1 overflow-hidden">
-            {advantages.items.map((item, i) => (
-              <div key={i} data-adv-image className="absolute inset-0 overflow-hidden" style={{ zIndex: i }}>
-                <Img src={item.image} sizes="67vw" />
+          <div className="relative col-span-7 col-start-6">
+            {amenities.items.map((it, i) => (
+              <div key={it.title} data-card className="grade absolute inset-0 origin-top overflow-hidden" style={{ zIndex: i }}>
+                <div data-inner className="absolute inset-0 scale-[1.15]" style={i === 0 ? { transform: "none" } : undefined}>
+                  <Img src={it.image} sizes="60vw" alt={it.title} />
+                </div>
               </div>
             ))}
           </div>
@@ -84,21 +96,18 @@ export function Advantages() {
       </div>
 
       {/* Mobile: stacked cards */}
-      <div className="md:hidden">
-        {advantages.items.map((item, i) => (
-          <article key={i} className={cn("bg-black", i > 0 && "mt-[5px]")}>
-            <div className="relative aspect-[4/3]">
-              <Img src={item.image} sizes="100vw" />
+      <div className="px-g py-sec md:motion-safe:hidden">
+        <Label n="06">{amenities.label}</Label>
+        {amenities.items.map((it, i) => (
+          <article key={it.title} className="mt-14">
+            <div className="grade relative aspect-[4/5] overflow-hidden">
+              <Img src={it.image} sizes="100vw" alt={it.title} />
             </div>
-            <div className="px-g pt-4 pb-8">
-              <p className="t-tiny text-white/40">
-                {i + 1} — {N}
-              </p>
-              <h3 className="t-lead mt-6">
-                <Lines lines={item.title} />
-              </h3>
-              <p className="t-tiny mt-10 ml-[30%]">{item.text}</p>
+            <div className="mt-5 flex items-baseline gap-4">
+              <span className="font-display serif-em text-copper text-[64px] leading-none">{pad(i + 1)}</span>
+              <h3 className="t-h3">{it.title}</h3>
             </div>
+            <p className="t-body mt-3 text-dim">{it.text}</p>
           </article>
         ))}
       </div>

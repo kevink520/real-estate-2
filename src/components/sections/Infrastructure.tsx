@@ -1,73 +1,56 @@
-"use client";
-
-import { useState } from "react";
-import { infrastructure } from "@/content/site";
-import { cn } from "@/lib/cn";
-import { Lines, Reveal } from "@/components/motion/Reveal";
+import { neighbourhood } from "@/content/site";
+import { Marquee } from "@/components/motion/Marquee";
 import { Parallax } from "@/components/motion/Parallax";
-import { Arrow } from "@/components/ui/Arrow";
+import { Lines, Reveal } from "@/components/motion/Reveal";
+import { Rule } from "@/components/motion/Rule";
 import { Img } from "@/components/ui/Img";
+import { Label } from "@/components/ui/Label";
 import { Section } from "@/components/ui/Section";
 
+/** Neighbourhood: a velocity marquee of everything downstairs, the street, and three addresses. */
 export function Infrastructure() {
-  const [index, setIndex] = useState(0);
-  const n = infrastructure.items.length;
-  const go = (dir: 1 | -1) => setIndex((i) => (i + dir + n) % n);
-
   return (
-    <>
-      <Section id="infrastructure" theme="dark" className="h-svh min-h-[560px] overflow-hidden">
-        <Parallax className="absolute inset-0" travel={20}>
-          <Img src={infrastructure.hero} className="object-[30%_50%]" />
-        </Parallax>
-        <Reveal as="h2" type="chars" className="t-h2 absolute top-1/2 right-g -translate-y-1/2">
-          {infrastructure.title}
-        </Reveal>
-      </Section>
+    <Section id="neighbourhood" theme="noir" chapter="07" className="overflow-hidden py-sec">
+      <div className="px-g">
+        <Rule />
+        <Label n="07" className="mt-6">
+          {neighbourhood.label}
+        </Label>
+      </div>
 
-      <Section theme="dark" themeLeft="light" className="md:h-svh md:min-h-[600px]">
-        <div className="flex h-full flex-col md:flex-row">
-          <div className="relative bg-white px-g pt-[90px] pb-g md:w-[var(--col)] md:pt-[120px]">
-            <div className="relative aspect-square overflow-hidden">
-              {infrastructure.items.map((it, i) => (
-                <div key={i} className={cn("absolute inset-0 transition-[clip-path] duration-1200 ease-lux", i === index ? "[clip-path:inset(0_0_0_0)]" : "[clip-path:inset(0_0_100%_0)]")} style={{ zIndex: i === index ? 2 : 1 }}>
-                  <Img src={it.image} sizes="(min-width: 768px) 30vw, 100vw" />
-                </div>
-              ))}
+      <Marquee className="mt-[8vh] border-y border-line py-6">
+        {neighbourhood.marquee.map((w, i) => (
+          <span key={i} className="font-display flex items-center text-[clamp(56px,9vw,168px)] leading-none tracking-[-0.04em]">
+            <span className={i % 2 ? "serif-em" : ""}>{w}</span>
+            <span className="mx-[0.35em] text-[0.4em] text-copper">✦</span>
+          </span>
+        ))}
+      </Marquee>
+      <h2 className="sr-only">{neighbourhood.marquee.join(", ")}</h2>
+
+      <div className="grid-12 mt-[12vh] items-end gap-y-10 px-g">
+        <Reveal as="h3" className="t-h1 col-span-12 md:col-span-6">
+          <Lines lines={neighbourhood.title} />
+        </Reveal>
+        <Parallax className="grade col-span-12 aspect-[16/10] md:col-span-6" travel={24}>
+          <Img src={neighbourhood.street} sizes="(min-width: 768px) 50vw, 100vw" alt="The street outside N°7" />
+        </Parallax>
+      </div>
+
+      <ul className="grid-12 mt-[10vh] gap-y-12 px-g">
+        {neighbourhood.items.map((it, i) => (
+          <li key={it.title} className="group col-span-12 md:col-span-4">
+            <div className="grade relative aspect-[4/5] overflow-hidden">
+              <Img src={it.image} sizes="(min-width: 768px) 33vw, 100vw" alt={it.title} className="transition-transform duration-[1.6s] ease-expo group-hover:scale-[1.06]" />
             </div>
-          </div>
-          <div
-            data-cursor="arrows"
-            className="relative min-h-[420px] flex-1 bg-black"
-            onClick={(e) => {
-              if (!window.matchMedia("(hover: hover)").matches) return;
-              const r = e.currentTarget.getBoundingClientRect();
-              go(e.clientX > r.left + r.width / 2 ? 1 : -1);
-            }}
-          >
-            <p className="t-tiny absolute top-[120px] left-g hidden md:block">{infrastructure.title}</p>
-            <div className="absolute top-g left-g flex gap-5 md:top-1/2 md:-translate-y-1/2">
-              <button type="button" aria-label="Previous" onClick={(e) => (e.stopPropagation(), go(-1))} className="transition-opacity hover:opacity-50">
-                <Arrow dir="left" className="w-8" />
-              </button>
-              <button type="button" aria-label="Next" onClick={(e) => (e.stopPropagation(), go(1))} className="transition-opacity hover:opacity-50">
-                <Arrow dir="right" className="w-8" />
-              </button>
+            <div className="mt-5 flex items-baseline justify-between border-t border-line pt-4">
+              <h4 className="t-h3">{it.title}</h4>
+              <span className="t-mono text-copper">0{i + 1}</span>
             </div>
-            <p className="t-tiny absolute top-g right-g md:top-1/2 md:-translate-y-1/2">
-              {index + 1} <span className="text-white/40">— {n}</span>
-            </p>
-            {infrastructure.items.map((it, i) => (
-              <div key={i} className={cn("absolute inset-x-g bottom-g transition-[opacity,transform] duration-800 ease-lux", i === index ? "opacity-100" : "pointer-events-none translate-y-4 opacity-0")}>
-                <h3 className="t-lead">
-                  <Lines lines={it.title} />
-                </h3>
-                <p className="t-tiny mt-6 md:ml-auto md:max-w-[440px]">{it.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Section>
-    </>
+            <p className="t-body mt-2 text-dim">{it.text}</p>
+          </li>
+        ))}
+      </ul>
+    </Section>
   );
 }

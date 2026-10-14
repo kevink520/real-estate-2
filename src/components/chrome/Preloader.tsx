@@ -4,95 +4,124 @@ import { useRef } from "react";
 import { brand } from "@/content/site";
 import { gsap, prefersReducedMotion, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { useApp } from "@/components/providers/AppProvider";
-import { Wordmark } from "./Wordmark";
 
-const MIN_HOLD = 1400;
+const MIN_HOLD = 1.9;
 
 /** Resolve once fonts and the hero imagery are decoded (capped so a slow image never blocks). */
 async function heroReady() {
   const imgs = Array.from(document.querySelectorAll<HTMLImageElement>("[data-hero-media] img"));
   const decode = Promise.all(imgs.map((img) => (img.complete ? Promise.resolve() : img.decode().catch(() => undefined))));
-  const timeout = new Promise((r) => setTimeout(r, 4000));
+  const timeout = new Promise((r) => setTimeout(r, 5000));
   await Promise.race([Promise.all([document.fonts.ready, decode]), timeout]);
 }
 
 /**
- * Reference sequence (frames captured at 100ms):
- * 1. black screen + outlined card;
- * 2. the black panel's right edge wipes left to the hero's ⅓ column (1.6s, easeOut) while the card rides along;
- * 3. the cutout slides in faster than the background (intro-decor);
- * 4. the bronze wordmark letters rise from their masks;
- * 5. headline lines reveal and the CTA / burger fade in.
- * Below 768px the panel simply fades.
+ * 1. A mono counter runs to 100 while "n°7" gains weight (wght 100 → 420).
+ * 2. The numeral lifts out of its mask; the two noir leaves part to a thin slit,
+ *    hold, then open fully (the aperture) while the hero settles from 1.25 to 1.
+ * 3. Wordmark letters rise, the headline reveals, chrome fades in.
  */
 export function Preloader() {
   const root = useRef<HTMLDivElement>(null);
-  const card = useRef<HTMLDivElement>(null);
   const { setIntroStage } = useApp();
 
-  useGSAP(() => {
-    const el = root.current;
-    if (!el) return;
-    const letters = document.querySelectorAll("header [data-letter]");
-    const fades = document.querySelectorAll("[data-intro='fade']");
-    const bg = document.querySelector("[data-hero-bg]");
-    const cutout = document.querySelector("[data-hero-cutout]");
+  useGSAP(
+    () => {
+      const el = root.current;
+      if (!el) return;
+      const q = gsap.utils.selector(el);
+      const letters = document.querySelectorAll("header [data-letter]");
+      const fades = document.querySelectorAll("[data-intro='fade']");
+      const media = document.querySelector("[data-hero-media]");
 
-    if (prefersReducedMotion()) {
-      gsap.set(el, { display: "none" });
-      setIntroStage("done");
-      return;
-    }
-
-    const desktop = window.matchMedia("(min-width: 768px)").matches;
-    gsap.set(letters, { yPercent: 110 });
-    gsap.set(fades, { autoAlpha: 0 });
-    gsap.set(bg, { scale: 1.12 });
-    gsap.set(cutout, { xPercent: desktop ? 45 : 0, autoAlpha: desktop ? 1 : 0 });
-
-    const tl = gsap.timeline({ paused: true, defaults: { ease: "lux" } });
-    if (desktop) {
-      tl.to(el, { clipPath: "inset(0% 66.6667% 0% 0%)", duration: 1.6 })
-        .to(card.current, { x: () => -window.innerWidth * 0.62, duration: 1.6 }, 0)
-        .to(bg, { scale: 1, duration: 2.2 }, 0)
-        .to(cutout, { xPercent: 0, duration: 1.9 }, 0.1)
-        .set(el, { display: "none" }, 1.6);
-    } else {
-      tl.to(card.current, { autoAlpha: 0, duration: 0.6 })
-        .to(el, { autoAlpha: 0, duration: 0.9 }, 0.2)
-        .to(bg, { scale: 1, duration: 2 }, 0.2)
-        .to(cutout, { autoAlpha: 1, duration: 1.2 }, 0.4)
-        .set(el, { display: "none" });
-    }
-    tl.to(letters, { yPercent: 0, duration: 1.2, stagger: 0.06 }, desktop ? 1.35 : 0.8)
-      .add(() => setIntroStage("reveal"), desktop ? 1.45 : 0.9)
-      .to(fades, { autoAlpha: 1, duration: 1 }, desktop ? 1.8 : 1.2)
-      .add(() => {
+      if (prefersReducedMotion()) {
+        gsap.set(el, { display: "none" });
         setIntroStage("done");
-        ScrollTrigger.refresh();
-      });
+        return;
+      }
 
-    const started = performance.now();
-    let cancelled = false;
-    heroReady().then(() => {
-      const wait = Math.max(0, MIN_HOLD - (performance.now() - started));
-      setTimeout(() => !cancelled && tl.play(), wait);
-    });
-    return () => {
-      cancelled = true;
-      tl.kill();
-    };
-  });
+      gsap.set(letters, { yPercent: 115 });
+      gsap.set(fades, { autoAlpha: 0 });
+      gsap.set(media, { scale: 1.25 });
+
+      const counter = { v: 0 };
+      const num = q("[data-count]")[0];
+      const mark = q("[data-mark]")[0];
+      const load = gsap.timeline();
+      load
+        .to(counter, {
+          v: 100,
+          duration: MIN_HOLD,
+          ease: "power2.inOut",
+          onUpdate: () => (num.textContent = String(Math.round(counter.v)).padStart(3, "0")),
+        })
+        .fromTo(mark, { "--w": 100 }, { "--w": 420, duration: MIN_HOLD, ease: "power2.inOut" }, 0)
+        .from(q("[data-meta]"), { autoAlpha: 0, y: 12, duration: 1, ease: "expo", stagger: 0.08 }, 0.1)
+        .from(mark, { yPercent: 100, duration: 1.4, ease: "expo" }, 0);
+
+      const out = gsap.timeline({ paused: true, defaults: { ease: "lux" } });
+      out
+        .to(q("[data-meta]"), { autoAlpha: 0, duration: 0.5, ease: "power2.out" })
+        .to(mark, { yPercent: -135, duration: 0.9, ease: "expo.in" }, 0)
+        .to(q("[data-leaf='l']"), { xPercent: -96, duration: 0.9, ease: "expo.out" }, 0.75)
+        .to(q("[data-leaf='r']"), { xPercent: 96, duration: 0.9, ease: "expo.out" }, 0.75)
+        .to(q("[data-leaf='l']"), { xPercent: -100.5, duration: 1.4 }, 1.55)
+        .to(q("[data-leaf='r']"), { xPercent: 100.5, duration: 1.4 }, 1.55)
+        .to(media, { scale: 1, duration: 2.6, ease: "expo" }, 0.85)
+        .set(el, { display: "none" }, 2.95)
+        .to(letters, { yPercent: 0, duration: 1.5, ease: "expo", stagger: 0.07 }, 1.9)
+        .add(() => setIntroStage("reveal"), 2.0)
+        .to(fades, { autoAlpha: 1, duration: 1.2, ease: "power2.out" }, 2.4)
+        .add(() => {
+          setIntroStage("done");
+          ScrollTrigger.refresh();
+        });
+
+      let cancelled = false;
+      Promise.all([heroReady(), new Promise((r) => load.eventCallback("onComplete", r))]).then(() => {
+        if (!cancelled) out.play();
+      });
+      return () => {
+        cancelled = true;
+        load.kill();
+        out.kill();
+      };
+    },
+    { scope: root },
+  );
 
   return (
-    <div ref={root} className="fixed inset-0 z-[60] grid place-items-center bg-black" style={{ clipPath: "inset(0% 0% 0% 0%)" }} aria-hidden>
-      <div ref={card} className="flex h-[230px] w-[160px] flex-col items-center justify-between border border-white/30 px-3 pt-3 pb-4 text-white">
-        <Wordmark className="w-[118px]" />
-        <p className="t-tiny text-center text-[7px] leading-[9px]">
-          {brand.tagline[0]}
+    <div ref={root} className="fixed inset-0 z-[80] text-bone" aria-hidden>
+      <div data-leaf="l" className="absolute inset-y-0 left-0 w-1/2 bg-noir" />
+      <div data-leaf="r" className="absolute inset-y-0 right-0 w-1/2 bg-noir" />
+
+      <div className="absolute inset-0 grid place-items-center">
+        <span className="block overflow-hidden px-[0.05em] pt-[0.04em] pb-[0.14em] text-[34vw] leading-[0.8] md:text-[22vw]">
+          <span
+            data-mark
+            className="font-display serif-em block"
+            style={{ fontVariationSettings: '"wght" var(--w, 100), "opsz" 144, "SOFT" 100, "WONK" 1' } as React.CSSProperties}
+          >
+            n°7
+          </span>
+        </span>
+      </div>
+
+      <div className="t-mono absolute inset-x-g top-g flex justify-between">
+        <span data-meta>{brand.name}</span>
+        <span data-meta className="hidden md:block">{brand.tagline}</span>
+      </div>
+      <div className="t-mono absolute inset-x-g bottom-g flex items-end justify-between">
+        <span data-meta>
+          <span data-count className="font-display not-italic text-[56px] leading-none tracking-[-0.04em] md:text-[88px]">
+            000
+          </span>
+        </span>
+        <span data-meta className="text-right">
+          {brand.coords[0]}
           <br />
-          {brand.tagline[1]}
-        </p>
+          {brand.coords[1]}
+        </span>
       </div>
     </div>
   );

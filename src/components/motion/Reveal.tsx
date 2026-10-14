@@ -16,7 +16,7 @@ type Props = {
   start?: string;
 };
 
-/** Masked slide-up text reveal, 1.6s on the reference's easeOut curve. */
+/** Masked slide-up text reveal (lines or chars) on the expo curve. */
 export function Reveal({ as: Tag = "div", children, className, type = "lines", delay = 0, intro = false, start = "top 88%" }: Props) {
   const ref = useRef<HTMLElement>(null);
   const tween = useRef<gsap.core.Tween | null>(null);
@@ -38,9 +38,9 @@ export function Reveal({ as: Tag = "div", children, className, type = "lines", d
             { yPercent: 110 },
             {
               yPercent: 0,
-              duration: 1.6,
-              ease: "lux",
-              stagger: type === "chars" ? 0.01 : 0.04,
+              duration: type === "chars" ? 1.4 : 1.5,
+              ease: "expo",
+              stagger: type === "chars" ? 0.018 : 0.07,
               delay,
               paused: intro,
               scrollTrigger: intro ? undefined : { trigger: el, start, once: true },
@@ -66,11 +66,18 @@ export function Reveal({ as: Tag = "div", children, className, type = "lines", d
   );
 }
 
-/** Explicit line breaks for headings: ["Line one", "Line two"]. */
+/** Renders `*word*` spans as <em> (serif italic accents). */
+export function Rich({ text }: { text: string }) {
+  return text.split(/(\*[^*]+\*)/).map((part, i) =>
+    part.startsWith("*") && part.endsWith("*") ? <em key={i}>{part.slice(1, -1)}</em> : part,
+  );
+}
+
+/** Explicit line breaks for headings: ["Line one", "*Italic* two"]. */
 export function Lines({ lines }: { lines: readonly string[] }) {
   return lines.map((line, i) => (
     <span key={i} className="block">
-      {line}
+      <Rich text={line} />
     </span>
   ));
 }

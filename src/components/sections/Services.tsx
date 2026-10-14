@@ -5,41 +5,35 @@ import { services } from "@/content/site";
 import { cn } from "@/lib/cn";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { Lines } from "@/components/motion/Reveal";
+import { RollText } from "@/components/motion/RollText";
 import { Img } from "@/components/ui/Img";
 import { Section } from "@/components/ui/Section";
 
-const N = services.items.length;
+// Mask shape per step: arch → lozenge → square, morphing as the service changes.
+const MASKS = ["inset(0% 0% 0% 0% round 999px 999px 0px 0px)", "inset(6% 4% 6% 4% round 48px)", "inset(0% 0% 0% 0% round 0px)"];
 
-/** Pinned: images reveal from the bottom while the matching outlined card lights up. */
+/** Pinned: the sticky image morphs its mask and dissolves as each service takes the stage. */
 export function Services() {
   const root = useRef<HTMLDivElement>(null);
+  const mask = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const N = services.items.length;
 
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
       mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
-        const images = gsap.utils.toArray<HTMLElement>("[data-svc-image]");
-        gsap.set(images.slice(1), { clipPath: "inset(100% 0% 0% 0%)" });
         const tl = gsap.timeline({
           defaults: { ease: "none" },
           scrollTrigger: {
             trigger: root.current,
             start: "top top",
             end: "bottom bottom",
-            scrub: true,
-            onUpdate: (self) => setActive(Math.min(N - 1, Math.floor(self.progress * N))),
+            scrub: 0.6,
+            onUpdate: (self) => setActive(Math.min(N - 1, Math.floor(self.progress * N * 0.999))),
           },
         });
-        for (let i = 1; i < N; i++) {
-          tl.to(images[i], { clipPath: "inset(0% 0% 0% 0%)", duration: 0.7 }, i - 1 + 0.3).fromTo(
-            images[i].firstElementChild,
-            { scale: 1.15 },
-            { scale: 1, duration: 0.7 },
-            "<",
-          );
-        }
-        tl.to({}, { duration: 0.3 });
+        tl.fromTo(mask.current, { clipPath: MASKS[0] }, { clipPath: MASKS[1], duration: 1 }).to(mask.current, { clipPath: MASKS[2], duration: 1 });
       });
       return () => mm.revert();
     },
@@ -47,41 +41,42 @@ export function Services() {
   );
 
   return (
-    <Section id="services" theme="dark">
+    <Section id="services" theme="noir">
       <div ref={root} className="relative md:h-[300svh]">
-        <div className="md:sticky md:top-0 md:flex md:h-svh md:overflow-hidden">
-          <div className="relative hidden flex-[2] overflow-hidden md:block">
-            {services.items.map((it, i) => (
-              <div key={i} data-svc-image className="absolute inset-0 overflow-hidden" style={{ zIndex: i }}>
-                <div className="absolute inset-0">
-                  <Img src={it.image} sizes="67vw" />
+        <div className="grid-12 gap-y-12 px-g py-sec md:sticky md:top-0 md:h-svh md:py-0 md:pt-28 md:pb-g">
+          <div className="col-span-12 md:col-span-5">
+            <div ref={mask} className="grade relative aspect-[4/5] overflow-hidden md:aspect-auto md:h-full" style={{ clipPath: MASKS[0] }}>
+              {services.items.map((s, i) => (
+                <div key={s.title} className={cn("absolute inset-0 transition-[opacity,transform] duration-[1.4s] ease-expo", i === active ? "scale-100 opacity-100" : "scale-110 opacity-0")}>
+                  <Img src={s.image} sizes="(min-width: 768px) 42vw, 100vw" alt={s.title} />
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-          <div className="relative px-g pt-[100px] pb-g md:flex-1 md:pt-[70px]">
-            <h2 className="t-body text-right">
+          <div className="col-span-12 flex flex-col justify-between md:col-span-6 md:col-start-7">
+            <h2 className="t-h2 em-copper">
               <Lines lines={services.title} />
             </h2>
-            <ol className="mt-10 flex flex-col gap-[5px] md:mt-[110px] md:max-w-[260px]">
-              {services.items.map((it, i) => (
-                <li
-                  key={i}
-                  className={cn(
-                    "border border-white/60 p-2.5 transition-opacity duration-800 ease-lux md:min-h-[150px]",
-                    i === active ? "md:opacity-100" : "md:opacity-25",
-                  )}
-                >
-                  <div className="relative mb-4 aspect-[4/3] md:hidden">
-                    <Img src={it.image} sizes="100vw" />
-                  </div>
-                  <h3 className="t-tiny flex justify-between">
-                    {it.title}
-                    <span className="text-white/40">
-                      {i + 1} — {N}
+            <ol className="mt-12">
+              {services.items.map((s, i) => (
+                <li key={s.title} className="border-t border-line">
+                  <button
+                    type="button"
+                    onClick={() => setActive(i)}
+                    className={cn("group grid w-full grid-cols-[4ch_1fr] gap-4 py-6 text-left transition-opacity duration-700", i === active ? "opacity-100" : "opacity-35 hover:opacity-70")}
+                  >
+                    <span className="t-mono pt-3 text-copper">0{i + 1}</span>
+                    <span>
+                      <span className="t-h2 block">
+                        <RollText>{s.title}</RollText>
+                      </span>
+                      <span className={cn("grid transition-[grid-template-rows] duration-700 ease-expo", i === active ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
+                        <span className="t-body block max-w-[440px] overflow-hidden text-dim">
+                          <span className="block pt-4">{s.text}</span>
+                        </span>
+                      </span>
                     </span>
-                  </h3>
-                  <p className="t-tiny mt-10">{it.text}</p>
+                  </button>
                 </li>
               ))}
             </ol>

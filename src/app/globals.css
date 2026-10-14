@@ -1,102 +1,167 @@
 @import "tailwindcss";
 @import "lenis/dist/lenis.css";
 
-/* Tokens measured from the reference (1440px desktop). */
+/* Editorial noir. --bg / --fg live on <html> and are tweened by ThemeScroller,
+   so every utility that reads them follows the page's colour as it scrolls. */
 @theme {
-  --color-bronze: #a0725b;
-  --color-ink: #000;
-  --color-paper: #fff;
-  --color-muted: #666;
-  --font-sans: var(--font-outfit), Helvetica, Arial, sans-serif;
+  --color-noir: #0e0c0a;
+  --color-noir-2: #171411;
+  --color-bone: #ede6da;
+  --color-ash: #8a8178;
+  --color-copper: #b4683e;
+  --color-copper-2: #d08a5c;
+  --font-serif: var(--font-fraunces), "Times New Roman", serif;
+  --font-sans: var(--font-inter-tight), Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
   --ease-lux: cubic-bezier(0.7, 0, 0.3, 1);
-  --ease-lux-inout: cubic-bezier(0.55, 0, 0.1, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-dim: color-mix(in srgb, var(--fg) 56%, transparent);
+  --color-line: color-mix(in srgb, var(--fg) 16%, transparent);
+}
+
+/* Registered so the day chapter's snapped text colour can transition. */
+@property --fg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ede6da;
 }
 
 :root {
+  --bg: #0e0c0a;
+  --fg: #ede6da;
   --gutter: 16px;
-  --col: 33.3333vw;
-  --logo-w: 45.8333vw;
 }
 @media (min-width: 768px) {
   :root {
-    --gutter: 30px;
+    --gutter: 24px;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    --gutter: 32px;
   }
 }
 
-/* Section themes (reference: .ui-dark / .ui-light). */
-[data-theme="dark"] {
-  --t-bg: #000;
-  --t-fg: #fff;
-  --t-line: rgba(255, 255, 255, 0.2);
-  --t-dim: rgba(255, 255, 255, 0.5);
+/* Local colour scopes for blocks that keep a fixed palette (menu, drawer, footer). */
+.scope-noir {
+  --bg: #0e0c0a;
+  --fg: #ede6da;
 }
-[data-theme="light"] {
-  --t-bg: #fff;
-  --t-fg: #000;
-  --t-line: rgba(0, 0, 0, 0.1);
-  --t-dim: rgba(0, 0, 0, 0.4);
+.scope-bone {
+  --bg: #ede6da;
+  --fg: #0e0c0a;
 }
 
 html {
-  background: #000;
+  background: var(--bg);
+  color: var(--fg);
+  transition: --fg 0.7s ease;
 }
 body {
-  background: #000;
-  color: #fff;
+  background: var(--bg);
+  color: var(--fg);
   font-family: var(--font-sans);
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 18px;
-  text-transform: uppercase;
+  font-size: 15px;
+  line-height: 22px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 ::selection {
-  background: var(--color-bronze);
-  color: #fff;
+  background: var(--color-copper);
+  color: var(--color-bone);
+}
+:focus-visible {
+  outline: 1px solid var(--color-copper);
+  outline-offset: 4px;
 }
 
-/* Type scale */
-@utility t-tiny {
-  font-size: 10px;
-  line-height: 12px;
-  letter-spacing: 0.03em;
+/* ---------- Type ---------- */
+@utility font-display {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-variation-settings: "opsz" 144, "SOFT" 30, "WONK" 0;
 }
-@utility t-label {
-  font-size: 12px;
-  line-height: 15px;
-  letter-spacing: 0.03em;
+@utility t-display {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-variation-settings: "opsz" 144, "SOFT" 30;
+  font-size: clamp(64px, 14vw, 260px);
+  line-height: 0.82;
+  letter-spacing: -0.045em;
 }
-@utility t-body {
-  font-size: 14px;
-  line-height: 18px;
-}
-@utility t-lead {
-  font-size: 16px;
-  line-height: 20px;
-  @media (min-width: 768px) {
-    font-size: 20px;
-    line-height: 24px;
-  }
+@utility t-h1 {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-variation-settings: "opsz" 144, "SOFT" 30;
+  font-size: clamp(52px, 8.6vw, 172px);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
 }
 @utility t-h2 {
-  font-size: 24px;
-  line-height: 26px;
-  font-weight: 500;
-  @media (min-width: 768px) {
-    font-size: 36px;
-    line-height: 38px;
-  }
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-variation-settings: "opsz" 120, "SOFT" 30;
+  font-size: clamp(40px, 5.4vw, 104px);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
 }
-@utility t-stat {
-  font-size: 32px;
+@utility t-h3 {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-variation-settings: "opsz" 72, "SOFT" 30;
+  font-size: clamp(28px, 2.6vw, 46px);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+}
+@utility t-statement {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-variation-settings: "opsz" 96, "SOFT" 30;
+  font-size: clamp(30px, 4.1vw, 76px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+@utility t-lead {
+  font-size: clamp(18px, 1.5vw, 23px);
+  line-height: 1.38;
+  letter-spacing: -0.012em;
+}
+@utility t-body {
+  font-size: 15px;
+  line-height: 22px;
+  letter-spacing: -0.005em;
+}
+@utility t-ui {
+  font-size: 13px;
   line-height: 1;
-  @media (min-width: 768px) {
-    font-size: 48px;
-  }
+  font-weight: 500;
+  letter-spacing: 0.005em;
+}
+@utility t-mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* Italic accents in serif headings: soft, slightly wonky Fraunces italic. */
+.serif-em,
+:is(.t-display, .t-h1, .t-h2, .t-h3, .t-statement, .font-display) em {
+  font-style: italic;
+  font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
+  letter-spacing: -0.02em;
+}
+.em-copper em {
+  color: var(--color-copper);
 }
 
-/* Page-gutter spacing (16px mobile, 30px desktop). */
+/* ---------- Layout ---------- */
 @utility px-g {
   padding-inline: var(--gutter);
 }
@@ -106,17 +171,11 @@ body {
 @utility pb-g {
   padding-bottom: var(--gutter);
 }
-@utility pr-g {
-  padding-right: var(--gutter);
-}
-@utility mx-g {
-  margin-inline: var(--gutter);
-}
-@utility mt-g {
-  margin-top: var(--gutter);
-}
 @utility gap-g {
   gap: var(--gutter);
+}
+@utility gap-x-g {
+  column-gap: var(--gutter);
 }
 @utility top-g {
   top: var(--gutter);
@@ -134,43 +193,75 @@ body {
   left: var(--gutter);
   right: var(--gutter);
 }
-
-/* Theme-aware helpers */
-@utility bg-theme {
-  background-color: var(--t-bg);
+@utility py-sec {
+  padding-block: max(96px, 16vh);
 }
-@utility text-theme {
-  color: var(--t-fg);
+@utility pt-sec {
+  padding-top: max(96px, 16vh);
 }
-@utility text-dim {
-  color: var(--t-dim);
+@utility pb-sec {
+  padding-bottom: max(96px, 16vh);
 }
-@utility border-theme {
-  border-color: var(--t-line);
-}
-
-/* Header logo: --mix blends the hero bronze into the current theme colour. */
-.header-logo {
-  --mix: 0;
-  color: color-mix(in srgb, var(--color-bronze) calc(var(--mix) * 100%), var(--header-fg));
-  transform-origin: 0 0;
-  will-change: transform;
-}
-/* With the menu open the logo always sits collapsed in white, as on the reference. */
-.header-logo.is-collapsed {
-  transform: none !important;
-  color: var(--header-fg);
-  transition: transform 0.8s var(--ease-lux), color 0.8s var(--ease-lux);
+@utility grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
 }
 
-/* Hide native cursor where the custom cursor takes over. */
+/* ---------- Texture ---------- */
+.grain {
+  position: fixed;
+  inset: -50%;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 0.9s steps(6) infinite;
+  mix-blend-mode: overlay;
+}
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  17% { transform: translate(-6%, 4%); }
+  33% { transform: translate(5%, -7%); }
+  50% { transform: translate(-3%, 8%); }
+  67% { transform: translate(8%, 2%); }
+  83% { transform: translate(-7%, -4%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* Older photography is graded towards the warm, low-saturation palette of the new set. */
+.grade img {
+  filter: sepia(0.18) saturate(0.78) contrast(1.06) brightness(0.96);
+}
+
+/* ---------- Interaction ---------- */
+/* Underline that draws in from the left and leaves to the right. */
+.link-line {
+  background: linear-gradient(currentColor, currentColor) no-repeat right bottom / 0 1px;
+  transition: background-size 0.6s var(--ease-expo);
+  padding-bottom: 2px;
+}
+.link-line:hover,
+.link-line:focus-visible {
+  background-position: left bottom;
+  background-size: 100% 1px;
+}
+.link-line.is-on {
+  background-size: 100% 1px;
+}
+
+/* GL frames hide their DOM fallback once the canvas has drawn. */
+[data-gl-ready] > [data-gl-fallback] {
+  visibility: hidden;
+}
+
 @media (hover: hover) and (pointer: fine) {
-  [data-cursor] {
+  [data-cursor],
+  [data-cursor] * {
     cursor: none;
   }
 }
 
-/* Hide horizontal scrollbars on draggable rows. */
 .no-scrollbar {
   scrollbar-width: none;
 }
@@ -183,16 +274,27 @@ body {
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  .grain {
+    animation: none;
   }
 }
 
+@keyframes scrollcue {
+  0% { transform: scaleX(0); transform-origin: left; }
+  45% { transform: scaleX(1); transform-origin: left; }
+  55% { transform: scaleX(1); transform-origin: right; }
+  100% { transform: scaleX(0); transform-origin: right; }
+}
+
+/* With the menu open the logo sits collapsed regardless of scroll. */
+.header-collapsed {
+  transform: scale(var(--logo-small)) !important;
+  transition: transform 0.9s var(--ease-expo);
+}
+
 @keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: none; }
 }

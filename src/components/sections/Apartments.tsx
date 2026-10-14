@@ -1,82 +1,149 @@
 "use client";
 
-import { useState } from "react";
-import { apartments } from "@/content/site";
+import { useEffect, useRef, useState } from "react";
+import { residences } from "@/content/site";
 import { cn } from "@/lib/cn";
+import { gsap, prefersReducedMotion } from "@/lib/gsap";
+import { useApp } from "@/components/providers/AppProvider";
+import { Magnetic } from "@/components/motion/Magnetic";
+import { Odometer } from "@/components/motion/Odometer";
 import { Lines, Reveal } from "@/components/motion/Reveal";
-import { Parallax } from "@/components/motion/Parallax";
-import { Img } from "@/components/ui/Img";
+import { Rule } from "@/components/motion/Rule";
+import { Label } from "@/components/ui/Label";
 import { Section } from "@/components/ui/Section";
 
-/** Simple line-drawn plan; the room layout shifts per tab. */
-function Plan({ variant }: { variant: number }) {
-  const split = 120 + variant * 18;
-  return (
-    <svg viewBox="0 0 300 260" className="h-auto w-full max-w-[300px]" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden>
-      <rect x="10" y="10" width="280" height="240" />
-      <rect x="14" y="14" width="272" height="232" strokeOpacity=".4" />
-      <path d={`M10 ${split}H${150 - variant * 6}M${150 - variant * 6} 10V${split}`} />
-      <path d={`M${210 - variant * 4} 10V100H290`} />
-      <path d="M210 160h80M250 160v90" strokeOpacity=".7" />
-      <circle cx="235" cy="60" r="16" strokeOpacity=".5" />
-      <rect x="40" y={split + 30} width="70" height="44" rx="4" strokeOpacity=".5" />
-      <path d={`M${150 - variant * 6} ${split - 40}a40 40 0 0 1 40 40`} strokeOpacity=".5" />
-      <text x="60" y="60" fill="currentColor" stroke="none" fontSize="9">
-        {(14 + variant * 3.2).toFixed(2)}
-      </text>
-      <text x="230" y="135" fill="currentColor" stroke="none" fontSize="9">
-        {(5 + variant * 0.8).toFixed(2)}
-      </text>
-      <text x="90" y={split + 100} fill="currentColor" stroke="none" fontSize="9">
-        {(19.5 + variant * 4).toFixed(2)}
-      </text>
-    </svg>
-  );
-}
-
+/**
+ * Residence explorer. Tabs switch the plan: walls redraw themselves, the area
+ * range rolls, and rooms and their schedule rows highlight one another on hover.
+ */
 export function Apartments() {
-  const [tab, setTab] = useState(0);
-  const current = apartments.tabs[tab];
+  const [tab, setTab] = useState(2);
+  const [room, setRoom] = useState<number | null>(null);
+  const plan = residences.plans[tab];
+  const svg = useRef<SVGSVGElement>(null);
+  const { setEnquiryOpen } = useApp();
+
+  useEffect(() => {
+    const el = svg.current;
+    if (!el || prefersReducedMotion()) return;
+    const walls = el.querySelectorAll("[data-wall]");
+    const labels = el.querySelectorAll("[data-label]");
+    gsap.fromTo(walls, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.6, ease: "expo", stagger: 0.07 });
+    gsap.fromTo(labels, { autoAlpha: 0, y: 2 }, { autoAlpha: 1, y: 0, duration: 1, ease: "expo", stagger: 0.07, delay: 0.4 });
+  }, [tab]);
+
+  const total = plan.rooms.reduce((a, r) => a + r.area, 0);
 
   return (
-    <Section id="apartments" theme="dark" themeLeft="dark" className="md:h-svh md:min-h-[680px]">
-      <div className="flex h-full flex-col-reverse md:flex-row">
-        <div className="flex flex-col px-g pt-10 pb-g md:w-[var(--col)] md:pt-[130px]">
-          <p className="t-tiny max-w-[360px] text-white/80">{apartments.text}</p>
-          <div className="t-tiny mt-8 flex flex-wrap gap-x-4 gap-y-2 border-b border-white/20 pb-2" role="tablist">
-            {apartments.tabs.map((t, i) => (
+    <Section id="residences" theme="bone" chapter="08" className="px-g py-sec">
+      <Rule />
+      <div className="grid-12 mt-6 gap-y-10">
+        <Label n="08" className="col-span-12 md:col-span-3">
+          {residences.label}
+        </Label>
+        <Reveal as="h2" className="t-h1 col-span-12 md:col-span-9">
+          <Lines lines={residences.title} />
+        </Reveal>
+        <Reveal className="t-lead col-span-12 max-w-[520px] md:col-span-5 md:col-start-4">{residences.text}</Reveal>
+      </div>
+
+      <div className="grid-12 mt-[12vh] gap-y-12">
+        <div className="col-span-12 flex flex-col md:col-span-5">
+          <div role="tablist" aria-label="Residence types" className="flex flex-wrap gap-2">
+            {residences.plans.map((p, i) => (
               <button
-                key={t.label}
-                type="button"
+                key={p.label}
                 role="tab"
                 aria-selected={i === tab}
-                onClick={() => setTab(i)}
-                className={cn("transition-colors duration-400 ease-lux", i === tab ? "text-bronze" : "hover:text-white/60")}
+                onClick={() => {
+                  setTab(i);
+                  setRoom(null);
+                }}
+                className={cn(
+                  "t-mono rounded-full border px-4 py-2.5 transition-colors duration-500",
+                  i === tab ? "border-fg bg-fg text-bg" : "border-line hover:border-fg",
+                )}
               >
-                {t.label}
+                {p.label}
               </button>
             ))}
           </div>
-          <p key={current.label} className="t-h2 mt-5 animate-[fadeUp_.8s_var(--ease-lux)]">
-            {current.area}
-            <span className="ml-1 align-top text-[0.45em]">M²</span>
+
+          <p className="mt-12 flex items-baseline gap-3">
+            <span className="font-display serif-em text-[clamp(72px,9vw,168px)] leading-[0.85] tracking-[-0.05em]">
+              <Odometer value={plan.area} stagger={0.03} />
+            </span>
+            <span className="t-mono">m²</span>
           </p>
-          <div key={`plan-${tab}`} className="mt-8 animate-[fadeUp_.8s_var(--ease-lux)] md:mt-auto md:mb-auto">
-            <Plan variant={tab} />
-          </div>
-          <p className="t-tiny mt-8">
-            <span className="text-bronze">{apartments.conditionsLabel}</span>
-            <br />
-            {apartments.conditions}
-          </p>
+
+          <table className="t-mono mt-10 w-full" onPointerLeave={() => setRoom(null)}>
+            <caption className="sr-only">Room schedule for the {plan.label}</caption>
+            <tbody>
+              {plan.rooms.map((r, i) => (
+                <tr
+                  key={`${plan.label}-${i}`}
+                  onPointerEnter={() => setRoom(i)}
+                  className={cn("border-t border-line transition-opacity duration-500", room !== null && room !== i && "opacity-35")}
+                >
+                  <td className="py-3 text-copper">0{i + 1}</td>
+                  <td className="py-3">{r.name}</td>
+                  <td className="py-3 text-right tabular-nums">{r.area.toFixed(1)} m²</td>
+                </tr>
+              ))}
+              <tr className="border-t border-fg">
+                <td />
+                <td className="py-3 text-dim">Total, example plan</td>
+                <td className="py-3 text-right tabular-nums">{total.toFixed(1)} m²</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p className="t-mono mt-8 text-dim">{residences.conditions}</p>
+          <Magnetic className="mt-10 self-start">
+            <button
+              type="button"
+              onClick={() => setEnquiryOpen(true)}
+              className="t-mono rounded-full bg-fg px-7 py-5 text-bg transition-colors duration-500 hover:bg-copper hover:text-bone"
+            >
+              {residences.cta} →
+            </button>
+          </Magnetic>
         </div>
-        <div className="relative aspect-[3/4] flex-1 md:aspect-auto">
-          <Parallax className="absolute inset-0" travel={15}>
-            <Img src={apartments.image} sizes="(min-width: 768px) 67vw, 100vw" className="object-[50%_25%]" />
-          </Parallax>
-          <Reveal as="h2" type="chars" className="t-h2 absolute right-g bottom-g text-right">
-            <Lines lines={apartments.title} />
-          </Reveal>
+
+        <div className="relative col-span-12 md:col-span-7 md:col-start-6">
+          <div className="sticky top-24 bg-fg/[0.035] p-[6%]">
+            <svg ref={svg} viewBox="-2 -2 104 74" className="w-full overflow-visible" role="img" aria-label={`Floor plan: ${plan.label}`}>
+              {plan.rooms.map((r, i) => {
+                const [x, y, w, h] = r.r;
+                return (
+                  <g key={`${plan.label}-${i}`} onPointerEnter={() => setRoom(i)} onPointerLeave={() => setRoom(null)} className="cursor-default">
+                    <rect
+                      x={x}
+                      y={y}
+                      width={w}
+                      height={h}
+                      className={cn("transition-[fill] duration-500", room === i ? "fill-copper/25" : "fill-transparent")}
+                    />
+                    <rect data-wall x={x} y={y} width={w} height={h} pathLength={1} strokeDasharray="1" fill="none" stroke="currentColor" strokeWidth={0.6} />
+                    <g data-label>
+                      <text x={x + 2.2} y={y + 4.6} fontSize={2.3} className="fill-current font-mono uppercase" letterSpacing={0.15}>
+                        {r.name}
+                      </text>
+                      <text x={x + 2.2} y={y + 8.4} fontSize={2.9} className="fill-current font-serif italic">
+                        {r.area.toFixed(1)} m²
+                      </text>
+                    </g>
+                  </g>
+                );
+              })}
+              {/* window bands along the top facade */}
+              <line x1="0" y1="-1.2" x2="100" y2="-1.2" stroke="currentColor" strokeOpacity=".35" strokeWidth=".3" strokeDasharray="6 2" />
+            </svg>
+            <div className="t-mono mt-6 flex justify-between text-dim">
+              <span>Plan — {plan.label}</span>
+              <span>N ↑ · 1:100</span>
+            </div>
+          </div>
         </div>
       </div>
     </Section>
